@@ -74,6 +74,50 @@ CREATE TABLE OrderDetails (
     FOREIGN KEY (ArtworkID) REFERENCES Artwork(ArtworkID)
 );
 
+-- Sample data for 'Artists'
+INSERT INTO Artists (Name, Email, Bio) VALUES
+('Alice', 'alice@example.com', 'Painter specializing in landscapes'),
+('Bob', 'bob@example.com', 'Photographer with a passion for nature'),
+('Charlie', 'charlie@example.com', 'Sculptor creating modern art pieces');
+
+-- Sample data for 'Categories'
+INSERT INTO Categories (CategoryName) VALUES
+('Painting'),
+('Sculpture'),
+('Photography');
+
+-- Sample data for 'Artwork'
+INSERT INTO Artwork (Title, Description, Price, ArtistID, ListingDate, AvailabilityStatus) VALUES
+('Sunset Bliss', 'A beautiful painting of a sunset.', 500.00, 1, '2025-01-01', 'available'),
+('Mountain Peaks', 'Photograph of snowy mountain peaks.', 300.00, 2, '2025-01-02', 'available'),
+('Abstract Thoughts', 'Modern abstract sculpture.', 1200.00, 3, '2025-01-03', 'sold');
+
+-- Sample data for 'ArtworkCategories'
+INSERT INTO ArtworkCategories (ArtworkID, CategoryID) VALUES
+(1, 1),
+(2, 3),
+(3, 2);
+
+-- Sample data for 'Buyers'
+INSERT INTO Buyers (Name, Email, ShippingAddress, BillingAddress) VALUES
+('Diana', 'diana@example.com', '123 Art St, ArtCity', '123 Art St, ArtCity'),
+('Ethan', 'ethan@example.com', '456 Canvas Ave, PaintTown', '456 Canvas Ave, PaintTown');
+
+-- Sample data for 'Reviews'
+INSERT INTO Reviews (ArtworkID, BuyerID, Rating, ReviewText) VALUES
+(1, 1, 5, 'Absolutely stunning!'),
+(2, 2, 4, 'Great photograph, but a bit expensive.');
+
+-- Sample data for 'Orders'
+INSERT INTO Orders (BuyerID, PurchaseDate, TotalPrice) VALUES
+(1, '2025-01-10', 500.00),
+(2, '2025-01-12', 300.00);
+
+-- Sample data for 'OrderDetails'
+INSERT INTO OrderDetails (OrderID, ArtworkID) VALUES
+(1, 1),
+(2, 2);
+
 -- Sample query to retrieve all artworks by a particular artist, sorted by their listing date
 SELECT *
 FROM Artwork

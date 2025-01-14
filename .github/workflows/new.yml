@@ -1,16 +1,27 @@
-name: Automation Test for PR
+name: Automation Test and Merge PR
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      result:
+        description: 'Test result (success or failure)'
+        required: true
+        type: string
+      sha:
+        description: 'Commit SHA to set status'
+        required: true
+        type: string
+      pr_number:
+        description: 'Pull request number to merge'
+        required: true
+        type: string
 
 jobs:
   automation-test:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
-      # Step 3: Set PR status to pending
+      # Step 1: Set PR status to pending
       - name: Set PR status to pending
         run: |
           curl -X POST \
@@ -23,40 +34,49 @@ jobs:
               "description": "Tests are running. Please wait."
             }'
 
-      # Step 4: Send request to Spring Boot application for testing
-      - name: Send request to Spring Boot application
-        run: |
-          curl -X POST "https://8deb-2405-201-4041-182c-18a5-3013-2d6a-5d0d.ngrok-free.app/github-webhook" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "owner": "${{ github.repository_owner }}",
-              "repo": "${{ github.event.repository.name }}",
-              "sha": "${{ github.sha }}",
-              "pr_number": "${{ github.event.pull_request.number }}",
-              "callback_url": "https://api.github.com/repos/${{ github.repository }}/actions/workflows/automation-test-and-merge-pr.yml/dispatches"
-            }'
-
-  handle-callback:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-
-    steps:
-      # Step 5: Set PR status based on result from Spring Boot
-      - name: Set PR status based on result
+      # Step 2: Process test result
+      - name: Process result from Spring Boot
         run: |
           if [ "${{ github.event.inputs.result }}" == "success" ]; then
-            STATUS="success"
-            DESCRIPTION="Tests passed."
+            echo "Tests passed!"
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.inputs.sha }} \
+              -d '{
+                "state": "success", 
+                "context": "Automation Test",
+                "description": "Tests passed!"
+              }'
           else
-            STATUS="failure"
-            DESCRIPTION="Tests failed."
+            echo "Tests failed!"
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.inputs.sha }} \
+              -d '{
+                "state": "failure", 
+                "context": "Automation Test",
+                "description": "Tests failed!"
+              }'
           fi
-          curl -X POST \
+
+      # Step 3: Decision to merge PR
+      - name: Decide whether to merge PR based on test result
+        if: ${{ github.event.inputs.result == 'success' }}
+        run: |
+          echo "Tests passed. Merging PR..."
+          curl -X PUT \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.inputs.sha }} \
-            -d "{
-              \"state\": \"$STATUS\", 
-              \"context\": \"Automation Test\",
-              \"description\": \"$DESCRIPTION\"
-            }"
+            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.inputs.pr_number }}/merge \
+            -d '{
+              "commit_title": "Merging PR after successful automation test",
+              "merge_method": "squash"
+            }'
+          
+      # Step 4: If test failed, don't merge
+      - name: Don't merge PR if tests failed
+        if: ${{ github.event.inputs.result == 'failure' }}
+        run: |
+          echo "Tests failed. PR will not be merged."

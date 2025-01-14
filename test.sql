@@ -1,11 +1,4 @@
--- Create the 'Artists' table
-CREATE TABLE Artists (
-    ArtistID INT AUTO_INCREMENT PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Email VARCHAR(255) UNIQUE NOT NULL,
-    Bio TEXT,
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+
 
 -- Create the 'Artwork' table
 CREATE TABLE Artwork (

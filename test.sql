@@ -7,17 +7,6 @@ CREATE TABLE Artists (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create the 'Artwork' table
-CREATE TABLE Artwork (
-    ArtworkID INT AUTO_INCREMENT PRIMARY KEY,
-    Title VARCHAR(255) NOT NULL,
-    Description TEXT,
-    Price DECIMAL(10, 2) NOT NULL,
-    ArtistID INT,
-    ListingDate DATE NOT NULL,
-    AvailabilityStatus ENUM('available', 'sold') DEFAULT 'available',
-    FOREIGN KEY (ArtistID) REFERENCES Artists(ArtistID)
-);
 
 -- Create the 'Categories' table
 CREATE TABLE Categories (

@@ -13,7 +13,7 @@ jobs:
       run: |
         response=$(curl -s -X POST -H "Content-Type: application/json" \
           -d '{"action": "check"}' \
-          https://a3e3-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/github-webhook)
+          http://20.193.143.183:8085/github-webhook)
         echo "response=$response" >> $GITHUB_ENV
         echo "Polling for result..."
 
@@ -27,7 +27,7 @@ jobs:
 
         while [ $attempt -lt $max_attempts ]; do
           echo "Polling attempt: $((attempt + 1))..."
-          response=$(curl -s -X GET https://a3e3-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/status)
+          response=$(curl -s -X GET http://20.193.143.183:8085/status)
 
           # Log the response
           echo "Polling response: $response"

@@ -29,23 +29,28 @@ jobs:
           echo "Polling attempt: $((attempt + 1))..."
           response=$(curl -s -X GET https://fcc6-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/status)
 
-         # Log the response
-echo "Polling response: $response"
+          # Log the response
+          echo "Polling response: $response"
 
-# Strip any extra spaces or newlines from the response (to handle any unexpected formatting)
-response_cleaned=$(echo "$response" | tr -d '[:space:]')
+          # Strip any extra spaces or newlines from the response (to handle any unexpected formatting)
+          response_cleaned=$(echo "$response" | tr -d '[:space:]')
 
-# Check if the result is available
-if [[ "$response_cleaned" == *"mergeable\":true"* ]]; then
-  echo "mergeable=true"
-  echo "Result is mergeable."
-  exit 0
-elif [[ "$response_cleaned" == *"mergeable\":false"* ]]; then
-  echo "mergeable=false"
-  echo "Result is not mergeable."
-  exit 1
-else
-  echo "Result not ready, waiting..."
-  sleep $delay
-  attempt=$((attempt + 1))
-fi
+          # Check if the result is available
+          if [[ "$response_cleaned" == *"mergeable\":true"* ]]; then
+            echo "mergeable=true"
+            echo "Result is mergeable."
+            exit 0
+          elif [[ "$response_cleaned" == *"mergeable\":false"* ]]; then
+            echo "mergeable=false"
+            echo "Result is not mergeable."
+            exit 1
+          else
+            echo "Result not ready, waiting..."
+            sleep $delay
+            attempt=$((attempt + 1))
+          fi
+        done
+        
+        # If we exceed the max attempts, exit with an error
+        echo "Timeout reached. Mergeability check did not complete."
+        exit 1

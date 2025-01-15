@@ -27,7 +27,10 @@ jobs:
 
         while [ $attempt -lt $max_attempts ]; do
           echo "Polling attempt: $((attempt + 1))..."
-          response=$(curl -s -X GET   https://fcc6-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/status)
+          response=$(curl -s -X GET https://fcc6-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/status)
+
+          # Log the response
+          echo "Polling response: $response"
 
           # Check if the result is available
           if [[ "$response" == *"mergeable\":true"* ]]; then

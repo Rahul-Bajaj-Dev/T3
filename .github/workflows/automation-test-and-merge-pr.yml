@@ -1,82 +1,49 @@
-name: Automation Test and Merge PR
+name: Enforce Webhook Mergeability
 
 on:
-  workflow_dispatch:
-    inputs:
-      result:
-        description: 'Test result (success or failure)'
-        required: true
-        type: string
-      sha:
-        description: 'Commit SHA to set status'
-        required: true
-        type: string
-      pr_number:
-        description: 'Pull request number to merge'
-        required: true
-        type: string
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
-  automation-test:
+  check-webhook:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Set PR status to pending
-      - name: Set PR status to pending
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
-            -d '{
-              "state": "pending", 
-              "context": "Automation Test",
-              "description": "Tests are running. Please wait."
-            }'
+    - name: Call webhook to initiate check
+      id: initiate-webhook
+      run: |
+        response=$(curl -s -X POST -H "Content-Type: application/json" \
+          -d '{"action": "check"}' \
+          http://your-webhook-url/webhook)
+        echo "response=$response" >> $GITHUB_ENV
+        echo "Polling for result..."
 
-      # Step 2: Process test result
-      - name: Process result from Spring Boot
-        run: |
-          if [ "${{ github.event.inputs.result }}" == "success" ]; then
-            echo "Tests passed!"
-            curl -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.inputs.sha }} \
-              -d '{
-                "state": "success", 
-                "context": "Automation Test",
-                "description": "Tests passed!"
-              }'
+    - name: Poll for mergeability result
+      id: poll-webhook
+      run: |
+        max_attempts=10      # Number of polling attempts
+        delay=20             # Delay in seconds between each attempt
+        attempt=0
+        result="pending"
+
+        while [ $attempt -lt $max_attempts ]; do
+          echo "Polling attempt: $((attempt + 1))..."
+          response=$(curl -s -X GET http://your-webhook-url/status)
+
+          # Check if the result is available
+          if [[ "$response" == *"mergeable\":true"* ]]; then
+            echo "mergeable=true"
+            echo "Result is mergeable."
+            exit 0
+          elif [[ "$response" == *"mergeable\":false"* ]]; then
+            echo "mergeable=false"
+            echo "Result is not mergeable."
+            exit 1
           else
-            echo "Tests failed!"
-            curl -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.inputs.sha }} \
-              -d '{
-                "state": "failure", 
-                "context": "Automation Test",
-                "description": "Tests failed!"
-              }'
+            echo "Result not ready, waiting..."
+            sleep $delay
+            attempt=$((attempt + 1))
           fi
+        done
 
-      # Step 3: Decision to merge PR
-      - name: Decide whether to merge PR based on test result
-        if: ${{ github.event.inputs.result == 'success' }}
-        run: |
-          echo "Tests passed. Merging PR..."
-          curl -X PUT \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.inputs.pr_number }}/merge \
-            -d '{
-              "commit_title": "Merging PR after successful automation test",
-              "merge_method": "squash"
-            }'
-          
-      # Step 4: If test failed, don't merge
-      - name: Don't merge PR if tests failed
-        if: ${{ github.event.inputs.result == 'failure' }}
-        run: |
-          echo "Tests failed. PR will not be merged."
+        echo "Timeout reached. Mergeability check did not complete."
+        exit 1

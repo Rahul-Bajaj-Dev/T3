@@ -13,37 +13,48 @@ jobs:
       run: |
         response=$(curl -s -X POST -H "Content-Type: application/json" \
           -d '{"action": "check"}' \
-          http://your-webhook-url/webhook)
+          http://20.193.143.183:8085/github-webhook)
         echo "response=$response" >> $GITHUB_ENV
         echo "Polling for result..."
+        sleep 160
 
     - name: Poll for mergeability result
       id: poll-webhook
       run: |
-        max_attempts=10      # Number of polling attempts
-        delay=20             # Delay in seconds between each attempt
+        max_attempts=30      # Number of polling attempts
+        delay=30             # Delay in seconds between each attempt
         attempt=0
         result="pending"
 
         while [ $attempt -lt $max_attempts ]; do
           echo "Polling attempt: $((attempt + 1))..."
-          response=$(curl -s -X GET http://your-webhook-url/status)
+          response=$(curl -s -X GET http://20.193.143.183:8085/status)
+
+          # Log the response
+          echo "Polling response: $response"
+
+          # Strip any extra spaces or newlines from the response
+          response_cleaned=$(echo "$response" | tr -d '[:space:]')
 
           # Check if the result is available
-          if [[ "$response" == *"mergeable\":true"* ]]; then
+          if [[ "$response_cleaned" == *"mergeable:true"* ]]; then
             echo "mergeable=true"
             echo "Result is mergeable."
             exit 0
-          elif [[ "$response" == *"mergeable\":false"* ]]; then
+          elif [[ "$response_cleaned" == *"mergeable:false"* ]]; then
             echo "mergeable=false"
             echo "Result is not mergeable."
             exit 1
+          elif [[ -z "$response_cleaned" ]]; then
+            echo "Empty response received, retrying..."
           else
             echo "Result not ready, waiting..."
-            sleep $delay
-            attempt=$((attempt + 1))
           fi
-        done
 
+          sleep $delay
+          attempt=$((attempt + 1))
+        done
+        
+        # If we exceed the max attempts, exit with an error
         echo "Timeout reached. Mergeability check did not complete."
         exit 1

@@ -13,7 +13,7 @@ jobs:
       run: |
         response=$(curl -s -X POST -H "Content-Type: application/json" \
           -d '{"action": "check"}' \
-          https://fcc6-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/webhook)
+          https://a3e3-2405-201-4041-182c-fd2d-c1f4-ac54-d5ea.ngrok-free.app/webhook)
         echo "response=$response" >> $GITHUB_ENV
         echo "Polling for result..."
 

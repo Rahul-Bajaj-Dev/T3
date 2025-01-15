@@ -20,7 +20,7 @@ jobs:
     - name: Poll for mergeability result
       id: poll-webhook
       run: |
-        max_attempts=10      # Number of polling attempts
+        max_attempts=15      # Number of polling attempts
         delay=20             # Delay in seconds between each attempt
         attempt=0
         result="pending"
